@@ -4,4 +4,4 @@ Week 6: creating a videogame with Javascript.
 
 Author: Patricio Iwanowski.
 
-Link to GitHub Page: 
+Link to GitHub Page: https://patoiwa.github.io/week-6/
