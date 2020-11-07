@@ -10,10 +10,16 @@ var KEY_ENTER = 13,
     pause = true,
     dir = 0,
     score = 0,
-    player = null,
+    //player = null,
+    body = new Array();
     food = null;
     wall = new Array();
     gameover = true;
+
+    iBody = new Image();
+    iFood = new Image();
+    aEat = new Audio();
+    aDie = new Audio();
 
 window.requestAnimationFrame = (function () {
     return window.requestAnimationFrame ||
@@ -59,11 +65,14 @@ function random(max) {
 function reset() {
     score = 0;
     dir = 1;
-    player.x = 40;
-    player.y = 40;
     food.x = random(canvas.width / 10 - 1) * 10;
     food.y = random(canvas.height / 10 - 1) * 10;
     gameover = false;
+
+    body.length = 0;
+    body.push(new Rectangle(40, 40, 10, 10));
+    body.push(new Rectangle(0, 0, 10, 10));
+    body.push(new Rectangle(0, 0, 10, 10));
 }
 
 function paint(ctx) {
@@ -75,7 +84,11 @@ function paint(ctx) {
     
     // Draw player
     ctx.fillStyle = '#0f0';
-    player.fill(ctx);
+    for (i = 0; i <= body.length-1;  i++) {
+        body[i].fill(ctx);
+        //ctx.drawImage(iBody, body[i].x, body[i].y);
+    }
+
 
     // Draw walls
     ctx.fillStyle = '#999';
@@ -84,8 +97,9 @@ function paint(ctx) {
     }
 
     // Draw food
-    ctx.fillStyle = '#f00';
-    food.fill(ctx);
+    //ctx.fillStyle = '#f00';
+    //food.fill(ctx);
+    ctx.drawImage(iFood, food.x, food.y);
 
     // Debug last key pressed
     ctx.fillStyle = '#fff';
@@ -132,30 +146,36 @@ function act() {
 
         // Move Rect
         if (dir == 0) {
-            player.y -= 10;
+            body[0].y -= 10;
         }
         if (dir == 1) {
-            player.x += 10;
+            body[0].x += 10;
         }
         if (dir == 2) {
-            player.y += 10;
+            body[0].y += 10;
         }
         if (dir == 3) {
-            player.x -= 10;
+            body[0].x -= 10;
+        }
+
+        // Move Body
+        for (i = body.length - 1; i > 0; i--) {
+            body[i].x = body[i - 1].x;
+            body[i].y = body[i - 1].y;
         }
 
         // Out Screen
-        if (player.x > canvas.width) {
-            player.x = 0;
+        if (body[0].x > canvas.width) {
+            body[0].x = 0;
         }
-        if (player.y > canvas.height) {
-            player.y = 0;
+        if (body[0].y > canvas.height) {
+            body[0].y = 0;
         }
-        if (player.x < 0) {
-            player.x = canvas.width;
+        if (body[0].x < 0) {
+            body[0].x = canvas.width;
         }
-        if (player.y < 0) {
-            player.y = canvas.height;
+        if (body[0].y < 0) {
+            body[0].y = canvas.height;
         }
 
         // Wall Intersects
@@ -164,18 +184,31 @@ function act() {
                 food.x = random(canvas.width / 10 - 1) * 10;
                 food.y = random(canvas.height / 10 - 1) * 10;
             }
-            if (player.intersects(wall[i])) {
+            if (body[0].intersects(wall[i])) {
                 pause = true;
                 gameover = true;
+                aDie.play();
             }
         }
 
         // Food Intersects
-        if (player.intersects(food)) {
+        if (body[0].intersects(food)) {
+            body.push(new Rectangle(0, 0, 10, 10));
+            aEat.play();
             score += 1;
             food.x = random(canvas.width / 10 - 1) * 10;
             food.y = random(canvas.height / 10 - 1) * 10;
         }
+
+        // Body Intersects
+        for (i = 2; i <= body.length - 1; i++ ) {
+            if (body[0].intersects(body[i])) {
+                gameover = true;
+                pause = true;
+                aDie.play();
+            }
+        }
+    
     }
 
     // Pause/Unpause
@@ -198,9 +231,15 @@ function init() {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
-    // Create player and food
-    player = new Rectangle(40, 40, 10, 10);
+    // Create body[0] and food
+    body[0] = new Rectangle(40, 40, 10, 10);
     food = new Rectangle(80, 80, 10, 10);
+
+    //Load Assets
+    iBody.src = 'assets/body.htm';
+    iFood.src = 'assets/manzana-10px.jpg';
+    aEat.src = 'assets/eat-sound.ogg';
+    aDie.src = 'assets/die-sound.ogg';
 
     // Create walls
     wall.push(new Rectangle(20, 20, 10, 10));
