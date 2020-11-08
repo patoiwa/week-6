@@ -80,6 +80,14 @@
     function random(max) {
         return ~~(Math.random() * max);
     }
+    function resize(){
+        var w = window.innerWidth / canvas.width;
+        var h = window.innerHeight / canvas.height;
+        var scale = Math.min(h, w);
+
+        canvas.style.width = (canvas.width * scale) + 'px';
+        canvas.style.height = (canvas.height * scale) + 'px';
+    }
 
     function reset() {
         score = 0;
@@ -269,6 +277,9 @@
         // Get canvas and context
         canvas = document.getElementById('canvas');
         ctx = canvas.getContext('2d');
+        
+        //Resize
+        resize();
 
         // Create body[0] and food
         body[0] = new Rectangle(40, 40, 10, 10);
@@ -291,4 +302,5 @@
         repaint();
     }
     window.addEventListener('load', init, false);
+    window.addEventListener('resize', resize, false);
 }(window));
