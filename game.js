@@ -225,13 +225,13 @@
             }
 
             // Body Intersects
-            for (i = 2; i <= body.length - 1; i++ ) {
+            /*for (i = 2; i <= body.length - 1; i++ ) {
                 if (body[0].intersects(body[i])) {
                     gameover = true;
                     pause = true;
                     aDie.play();
                 }
-            }
+            }*/
         
         }
 
