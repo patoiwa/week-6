@@ -40,6 +40,10 @@
         scenes = [],
         mainScene = null,
         gameScene = null,
+        highscoresScene = null,
+
+        highscores = [],
+        posHighscore = 10,
 
     window.requestAnimationFrame = (function () {
         return window.requestAnimationFrame ||
@@ -112,6 +116,18 @@
         return ~~(Math.random() * max);
     }
 
+    function addHighscore(score) {
+        posHighscore = 0;
+        while (highscores[posHighscore] > score && posHighscore < highscores.length) {
+            posHighscore += 1;
+        }
+        highscores.splice(posHighscore, 0, score);
+        if (highscores.length > 10) {
+            highscores.length = 10;
+        }
+        localStorage.highscores = highscores.join(',');
+    }
+
     function repaint() {
         window.requestAnimationFrame(repaint);
         if (scenes.length){
@@ -181,6 +197,11 @@
         bufferCtx = buffer.getContext('2d');
         buffer.width = 300;
         buffer.height = 150;
+
+        // Load saved highscores
+        if (localStorage.highscores) {
+            highscores = localStorage.highscores.split(',');
+        }
         
         //Resize
         resize();
@@ -224,7 +245,7 @@
     mainScene.act = function () {
         // Load next scene
         if (lastPress === KEY_ENTER) {
-            loadScene(gameScene);
+            loadScene(highscoresScene);
             lastPress = null;
         }
     };
@@ -298,7 +319,7 @@
         if (!pause) {
             // GameOver Reset
             if (gameover) {
-                loadScene(mainScene);
+                loadScene(highscoresScene);
             }
 
             // Change Direction
@@ -359,6 +380,7 @@
                     pause = true;
                     gameover = true;
                     aDie.play();
+                    addHighscore(score);
                 }
             }
 
@@ -377,6 +399,7 @@
                     gameover = true;
                     pause = true;
                     aDie.play();
+                    addHighscore(score);
                 }
             }*/
         
@@ -388,6 +411,37 @@
             lastPress = undefined;
         }
     }
+
+    // Highscore Scene
+    highscoresScene = new Scene();
+
+    highscoresScene.paint = function (ctx) {
+        var i = 0;
+        // Clean canvas
+        ctx.fillStyle = '#030';
+        ctx.fillRect(0, 0, buffer.width, buffer.height);
+        // Draw title
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText('HIGH SCORES', 150, 30);
+        // Draw high scores
+        ctx.textAlign = 'right';
+        for (i = 0; i <= highscores.length - 1; i ++) {
+            if (i === posHighscore) {
+                ctx.fillText('*' + highscores[i], 180, 40 + i * 10);
+            } else {
+                ctx.fillText(highscores[i], 180, 40 + i * 10);
+            }
+        }
+    };
+
+    highscoresScene.act = function () {
+        // Load next scene
+        if (lastPress === KEY_ENTER) {
+            loadScene(gameScene);
+            lastPress = null;
+        }
+    };
 
     //Event Listeners
     window.addEventListener('load', init, false);
