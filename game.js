@@ -36,6 +36,11 @@
         bufferOffsetX = 0,
         bufferOffsetY = 0,
 
+        currentScene = 0,
+        scenes = [],
+        mainScene = null,
+        gameScene = null,
+
     window.requestAnimationFrame = (function () {
         return window.requestAnimationFrame ||
         window.mozRequestAnimationFrame ||
@@ -87,9 +92,38 @@
             }
         }
     }
+
+    function Scene() {
+        this.id = scenes.length;
+        scenes.push(this);
+    }
+    Scene.prototype = {
+        constructor: Scene,
+        load: function () {},
+        paint: function (ctx) {},
+        act: function () {}
+    };
+    function loadScene(scene) {
+        currentScene = scene.id;
+        scenes[currentScene].load();
+    }
+
     function random(max) {
         return ~~(Math.random() * max);
     }
+
+    function repaint() {
+        window.requestAnimationFrame(repaint);
+        if (scenes.length){
+            scenes[currentScene].paint(bufferCtx);
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(buffer, bufferOffsetX, bufferOffsetY, buffer.width * bufferScale, buffer.height * bufferScale)
+        }
+    }
+
     function resize(){
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -115,7 +149,102 @@
         body.push(new Rectangle(0, 0, 10, 10));
     }
 
-    function paint(ctx) {
+    function run() {
+        window.requestAnimationFrame(run);
+        var now = Date.now(),
+        deltaTime = (now - lastUpdate) / 1000;
+        if (deltaTime > 1) {
+            deltaTime = 0;
+        }
+        lastUpdate = now;
+        frames += 1;
+        acumDelta += deltaTime;
+        if (acumDelta > 1) {
+            FPS = frames;
+            frames = 0;
+            acumDelta -= 1;
+        }
+        if (scenes.length){
+            scenes[currentScene].act(deltaTime);
+        } 
+    }
+
+    function init() {
+        // Get canvas and context
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 300;
+
+        // Load buffer
+        buffer = document.createElement('canvas');
+        bufferCtx = buffer.getContext('2d');
+        buffer.width = 300;
+        buffer.height = 150;
+        
+        //Resize
+        resize();
+
+        // Create body[0] and food
+        body[0] = new Rectangle(40, 40, 10, 10);
+        food = new Rectangle(80, 80, 10, 10);
+
+        //Load Assets
+        iBody.src = 'assets/body.htm';
+        iFood.src = 'assets/manzana-10px.jpg';
+        aEat.src = 'assets/eat-sound.ogg';
+        aDie.src = 'assets/die-sound.ogg';
+
+        // Create walls
+        wall.push(new Rectangle(20, 20, 10, 10));
+        wall.push(new Rectangle(20, 100, 10, 10));
+        wall.push(new Rectangle(200, 20, 10, 10));
+        wall.push(new Rectangle(200, 100, 10, 10));
+
+        // Start game
+        run();
+        repaint();
+    }
+
+    // Main Scene
+    mainScene = new Scene();
+
+    mainScene.paint = function (ctx) {
+        // Clean canvas
+        ctx.fillStyle = '#030';
+        ctx.fillRect(0, 0, buffer.width, buffer.height);
+
+        // Draw title
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText('SNAKE', 150, 60);
+        ctx.fillText('Press Enter', 150, 90);
+    };
+
+    mainScene.act = function () {
+        // Load next scene
+        if (lastPress === KEY_ENTER) {
+            loadScene(gameScene);
+            lastPress = null;
+        }
+    };
+
+    // Game Scene
+    gameScene = new Scene();
+
+    gameScene.load = function () {
+        score = 0;
+        dir = 1;
+        body.length = 0;
+        body.push(new Rectangle(40, 40, 10, 10));
+        body.push(new Rectangle(0, 0, 10, 10));
+        body.push(new Rectangle(0, 0, 10, 10));
+        food.x = random(buffer.width / 10 - 1) * 10;
+        food.y = random(buffer.height / 10 - 1) * 10;
+        gameover = false;
+    };
+
+    gameScene.paint = function (ctx) {
         var i = 0;
         
         // Clean canvas
@@ -128,7 +257,6 @@
             body[i].fill(ctx);
             //ctx.drawImage(iBody, body[i].x, body[i].y);
         }
-
 
         // Draw walls
         ctx.fillStyle = '#999';
@@ -164,15 +292,13 @@
         ctx.fillText('FPS: ' + FPS, 40, 10);
     }
 
-    function act(deltaTime) {
-        
+    gameScene.act = function(deltaTime) {   
         var i =0 ;
 
         if (!pause) {
-
             // GameOver Reset
             if (gameover) {
-                reset();
+                loadScene(mainScene);
             }
 
             // Change Direction
@@ -262,72 +388,8 @@
             lastPress = undefined;
         }
     }
-    function repaint() {
-        window.requestAnimationFrame(repaint);
-        paint(bufferCtx);
 
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(buffer, bufferOffsetX, bufferOffsetY, buffer.width * bufferScale, buffer.height * bufferScale)
-    }
-
-    function run() {
-        window.requestAnimationFrame(run);
-        var now = Date.now(),
-        deltaTime = (now - lastUpdate) / 1000;
-        if (deltaTime > 1) {
-            deltaTime = 0;
-        }
-        lastUpdate = now;
-        frames += 1;
-        acumDelta += deltaTime;
-        if (acumDelta > 1) {
-            FPS = frames;
-            frames = 0;
-            acumDelta -= 1;
-        }
-
-        act(deltaTime);
-    }
-    function init() {
-
-        // Get canvas and context
-        canvas = document.getElementById('canvas');
-        ctx = canvas.getContext('2d');
-        canvas.width = 600;
-        canvas.height = 300;
-
-        // Load buffer
-        buffer = document.createElement('canvas');
-        bufferCtx = buffer.getContext('2d');
-        buffer.width = 300;
-        buffer.height = 150;
-        
-        //Resize
-        resize();
-        // Create body[0] and food
-        body[0] = new Rectangle(40, 40, 10, 10);
-        food = new Rectangle(80, 80, 10, 10);
-
-        //Load Assets
-        iBody.src = 'assets/body.htm';
-        iFood.src = 'assets/manzana-10px.jpg';
-        aEat.src = 'assets/eat-sound.ogg';
-        aDie.src = 'assets/die-sound.ogg';
-
-        // Create walls
-        wall.push(new Rectangle(20, 20, 10, 10));
-        wall.push(new Rectangle(20, 100, 10, 10));
-        wall.push(new Rectangle(200, 20, 10, 10));
-        wall.push(new Rectangle(200, 100, 10, 10));
-
-        // Start game
-        run();
-        repaint();
-        
-
-    }
+    //Event Listeners
     window.addEventListener('load', init, false);
     window.addEventListener('resize', resize, false);
 }(window));
