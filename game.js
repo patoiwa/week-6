@@ -24,6 +24,11 @@
         aEat = new Audio();
         aDie = new Audio();
 
+        lastUpdate = 0,
+        FPS = 0,
+        frames = 0,
+        acumDelta = 0;
+
     window.requestAnimationFrame = (function () {
         return window.requestAnimationFrame ||
         window.mozRequestAnimationFrame ||
@@ -133,9 +138,13 @@
             }
             ctx.textAlign = 'left';
         }
+
+        //Draw FPS
+        ctx.fillText('FPS: ' + FPS, 40, 10);
     }
 
-    function act() {
+    function act(deltaTime) {
+        
         var i =0 ;
 
         if (!pause) {
@@ -161,16 +170,16 @@
 
             // Move Rect
             if (dir === 0) {
-                body[0].y -= 10;
+                body[0].y -= 120 * deltaTime;
             }
             if (dir === 1) {
-                body[0].x += 10;
+                body[0].x += 120 * deltaTime;
             }
             if (dir === 2) {
-                body[0].y += 10;
+                body[0].y += 120 * deltaTime;
             }
             if (dir === 3) {
-                body[0].x -= 10;
+                body[0].x -= 120 * deltaTime;
             }
 
             // Move Body
@@ -237,8 +246,23 @@
         paint(ctx);
     }
     function run() {
-        setTimeout(run, 50);
-        act();
+        window.requestAnimationFrame(run);
+        var now = Date.now(),
+        deltaTime = (now - lastUpdate) / 1000;
+        if (deltaTime > 1) {
+            deltaTime = 0;
+        }
+        lastUpdate = now;
+        frames += 1;
+        acumDelta += deltaTime;
+        if (acumDelta > 1) {
+            FPS = frames;
+            frames = 0;
+            acumDelta -= 1;
+        }
+
+        act(deltaTime);
+        paint(ctx);
     }
     function init() {
 
