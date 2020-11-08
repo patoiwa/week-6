@@ -18,6 +18,7 @@
         food = null;
         wall = [];
         gameover = true;
+        fullscreen = false;
 
         iBody = new Image();
         iFood = new Image();
@@ -29,6 +30,12 @@
         frames = 0,
         acumDelta = 0;
 
+        buffer = null,
+        bufferCtx = null,
+        bufferScale = 1,
+        bufferOffsetX = 0,
+        bufferOffsetY = 0,
+
     window.requestAnimationFrame = (function () {
         return window.requestAnimationFrame ||
         window.mozRequestAnimationFrame ||
@@ -39,6 +46,9 @@
     }());
 
     document.addEventListener('keydown', function (evt) {
+        if (evt.which >= 37 && evt.which <= 40) {
+            evt.preventDefault();
+        }
         lastPress = evt.which;
     }, false);
 
@@ -81,19 +91,22 @@
         return ~~(Math.random() * max);
     }
     function resize(){
-        var w = window.innerWidth / canvas.width;
-        var h = window.innerHeight / canvas.height;
-        var scale = Math.min(h, w);
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        canvas.style.width = (canvas.width * scale) + 'px';
-        canvas.style.height = (canvas.height * scale) + 'px';
+        var w = window.innerWidth / buffer.width;
+        var h = window.innerHeight / buffer.height;
+        bufferScale = Math.min(h, w);
+
+        bufferOffsetX = (canvas.width - (buffer.width * bufferScale)) / 2;
+        bufferOffsetY = (canvas.height - (buffer.height * bufferScale)) / 2;
     }
 
     function reset() {
         score = 0;
         dir = 1;
-        food.x = random(canvas.width / 10 - 1) * 10;
-        food.y = random(canvas.height / 10 - 1) * 10;
+        food.x = random(buffer.width / 10 - 1) * 10;
+        food.y = random(buffer.height / 10 - 1) * 10;
         gameover = false;
 
         body.length = 0;
@@ -107,7 +120,7 @@
         
         // Clean canvas
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, buffer.width, buffer.height);
         
         // Draw player
         ctx.fillStyle = '#0f0';
@@ -124,16 +137,16 @@
         }
 
         // Draw food
-        ctx.fillStyle = '#f00';
-        food.fill(ctx);
+        //ctx.fillStyle = '#f00';
+        //food.fill(ctx);
         ctx.strokeStyle = '#f00';
         ctx.drawImage(iFood, food.x, food.y);
 
         // Debug last key pressed
-        ctx.fillStyle = '#fff';
         //ctx.fillText('Last Press: '+lastPress,0,20);
         
         // Draw score
+        ctx.fillStyle = '#fff';
         ctx.fillText('Score: ' + score, 0, 10);
         
         // Draw pause
@@ -163,16 +176,16 @@
             }
 
             // Change Direction
-            if (lastPress === KEY_UP) {
+            if (lastPress === KEY_UP && dir !== 2) {
                 dir = 0;
             }
-            if (lastPress === KEY_RIGHT) {
+            if (lastPress === KEY_RIGHT && dir !== 3) {
                 dir = 1;
             }
-            if (lastPress === KEY_DOWN) {
+            if (lastPress === KEY_DOWN && dir !== 0) {
                 dir = 2;
             }
-            if (lastPress === KEY_LEFT) {
+            if (lastPress === KEY_LEFT && dir !== 1) {
                 dir = 3;
             }
 
@@ -197,24 +210,24 @@
             }
 
             // Out Screen
-            if (body[0].x > canvas.width) {
+            if (body[0].x > buffer.width) {
                 body[0].x = 0;
             }
-            if (body[0].y > canvas.height) {
+            if (body[0].y > buffer.height) {
                 body[0].y = 0;
             }
             if (body[0].x < 0) {
-                body[0].x = canvas.width;
+                body[0].x = buffer.width;
             }
             if (body[0].y < 0) {
-                body[0].y = canvas.height;
+                body[0].y = buffer.height;
             }
 
             // Wall Intersects
             for (i = 0; i <= (wall.length - 1); i++) {
                 if (food.intersects(wall[i])) {
-                    food.x = random(canvas.width / 10 - 1) * 10;
-                    food.y = random(canvas.height / 10 - 1) * 10;
+                    food.x = random(buffer.width / 10 - 1) * 10;
+                    food.y = random(buffer.height / 10 - 1) * 10;
                 }
                 if (body[0].intersects(wall[i])) {
                     pause = true;
@@ -228,8 +241,8 @@
                 body.push(new Rectangle(0, 0, 10, 10));
                 aEat.play();
                 score += 1;
-                food.x = random(canvas.width / 10 - 1) * 10;
-                food.y = random(canvas.height / 10 - 1) * 10;
+                food.x = random(buffer.width / 10 - 1) * 10;
+                food.y = random(buffer.height / 10 - 1) * 10;
             }
 
             // Body Intersects
@@ -251,8 +264,14 @@
     }
     function repaint() {
         window.requestAnimationFrame(repaint);
-        paint(ctx);
+        paint(bufferCtx);
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(buffer, bufferOffsetX, bufferOffsetY, buffer.width * bufferScale, buffer.height * bufferScale)
     }
+
     function run() {
         window.requestAnimationFrame(run);
         var now = Date.now(),
@@ -270,17 +289,23 @@
         }
 
         act(deltaTime);
-        paint(ctx);
     }
     function init() {
 
         // Get canvas and context
         canvas = document.getElementById('canvas');
         ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 300;
+
+        // Load buffer
+        buffer = document.createElement('canvas');
+        bufferCtx = buffer.getContext('2d');
+        buffer.width = 300;
+        buffer.height = 150;
         
         //Resize
         resize();
-
         // Create body[0] and food
         body[0] = new Rectangle(40, 40, 10, 10);
         food = new Rectangle(80, 80, 10, 10);
@@ -300,6 +325,8 @@
         // Start game
         run();
         repaint();
+        
+
     }
     window.addEventListener('load', init, false);
     window.addEventListener('resize', resize, false);
