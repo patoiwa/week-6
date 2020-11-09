@@ -16,12 +16,14 @@
         //player = null,
         body = [];
         food = null;
+        specialFood = null;
         wall = [];
         gameover = true;
         fullscreen = false;
 
         iBody = new Image();
         iFood = new Image();
+        iSpecialFood = new Image();
         aEat = new Audio();
         aDie = new Audio();
 
@@ -44,6 +46,8 @@
 
         highscores = [],
         posHighscore = 10,
+
+        url = "https://jsonplaceholder.typicode.com/posts",
 
     window.requestAnimationFrame = (function () {
         return window.requestAnimationFrame ||
@@ -166,7 +170,7 @@
     }
 
     function run() {
-        window.requestAnimationFrame(run);
+        setTimeout(run, 40);
         var now = Date.now(),
         deltaTime = (now - lastUpdate) / 1000;
         if (deltaTime > 1) {
@@ -209,10 +213,12 @@
         // Create body[0] and food
         body[0] = new Rectangle(40, 40, 10, 10);
         food = new Rectangle(80, 80, 10, 10);
+        specialFood = new Rectangle(120, 120, 10, 10);
 
         //Load Assets
         iBody.src = 'assets/body.htm';
         iFood.src = 'assets/manzana-10px.jpg';
+        iSpecialFood.src = 'assets/banana-10px.jpg';
         aEat.src = 'assets/eat-sound.ogg';
         aDie.src = 'assets/die-sound.ogg';
 
@@ -291,6 +297,10 @@
         ctx.strokeStyle = '#f00';
         ctx.drawImage(iFood, food.x, food.y);
 
+        //Draw special food
+        ctx.strokeStyle = '#f00';
+        ctx.drawImage(iSpecialFood, specialFood.x, specialFood.y);
+
         // Debug last key pressed
         //ctx.fillText('Last Press: '+lastPress,0,20);
         
@@ -310,7 +320,7 @@
         }
 
         //Draw FPS
-        ctx.fillText('FPS: ' + FPS, 40, 10);
+        ctx.fillText('FPS: ' + FPS, 50, 10);
     }
 
     gameScene.act = function(deltaTime) {   
@@ -338,16 +348,16 @@
 
             // Move Rect
             if (dir === 0) {
-                body[0].y -= 120 * deltaTime;
+                body[0].y -= 10; //120 * deltaTime;
             }
             if (dir === 1) {
-                body[0].x += 120 * deltaTime;
+                body[0].x += 10; //120 * deltaTime;
             }
             if (dir === 2) {
-                body[0].y += 120 * deltaTime;
+                body[0].y += 10; //120 * deltaTime;
             }
             if (dir === 3) {
-                body[0].x -= 120 * deltaTime;
+                body[0].x -= 10; //120 * deltaTime;
             }
 
             // Move Body
@@ -376,6 +386,10 @@
                     food.x = random(buffer.width / 10 - 1) * 10;
                     food.y = random(buffer.height / 10 - 1) * 10;
                 }
+                if (specialFood.intersects(wall[i])) {
+                    specialFood.x = random(buffer.width / 10 - 1) * 10;
+                    specialFood.y = random(buffer.height / 10 - 1) * 10;
+                }
                 if (body[0].intersects(wall[i])) {
                     pause = true;
                     gameover = true;
@@ -393,15 +407,30 @@
                 food.y = random(buffer.height / 10 - 1) * 10;
             }
 
+            //Special Food Intersects
+            if (body[0].intersects(specialFood)) {
+                aEat.play();
+                score += 10;
+                specialFood.x = buffer.width + 100;
+                specialFood.y = buffer.height + 100;
+                setTimeout( function(){
+                    specialFood.x = random(buffer.width / 10 - 1) * 10;
+                    specialFood.y = random(buffer.height / 10 - 1) * 10;
+                }, (random(10) * 1000));
+                fetch(url)
+                .then(() => console.log("Score sent succesfully"))
+                .catch(() => console.log("Something went wrong"))
+            }
+
             // Body Intersects
-            /*for (i = 2; i <= body.length - 1; i++ ) {
+            for (i = 2; i <= body.length - 1; i++ ) {
                 if (body[0].intersects(body[i])) {
                     gameover = true;
                     pause = true;
                     aDie.play();
                     addHighscore(score);
                 }
-            }*/
+            }
         
         }
 
@@ -428,7 +457,7 @@
         ctx.textAlign = 'right';
         for (i = 0; i <= highscores.length - 1; i ++) {
             if (i === posHighscore) {
-                ctx.fillText('*' + highscores[i], 180, 40 + i * 10);
+                ctx.fillText('***' + highscores[i], 180, 40 + i * 10);
             } else {
                 ctx.fillText(highscores[i], 180, 40 + i * 10);
             }
