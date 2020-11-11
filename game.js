@@ -13,7 +13,6 @@
         pause = true,
         dir = 0,
         score = 0,
-        //player = null,
         body = [];
         food = null;
         specialFood = null;
@@ -134,6 +133,19 @@
 
     function repaint() {
         window.requestAnimationFrame(repaint);
+        var now = Date.now(),
+        deltaTime = (now - lastUpdate) / 1000;
+        if (deltaTime > 1) {
+            deltaTime = 0;
+        }
+        lastUpdate = now;
+        frames += 1;
+        acumDelta += deltaTime;
+        if (acumDelta > 1) {
+            FPS = frames;
+            frames = 0;
+            acumDelta -= 1;
+        }
         if (scenes.length){
             scenes[currentScene].paint(bufferCtx);
 
@@ -170,22 +182,9 @@
     }
 
     function run() {
-        setTimeout(run, 40);
-        var now = Date.now(),
-        deltaTime = (now - lastUpdate) / 1000;
-        if (deltaTime > 1) {
-            deltaTime = 0;
-        }
-        lastUpdate = now;
-        frames += 1;
-        acumDelta += deltaTime;
-        if (acumDelta > 1) {
-            FPS = frames;
-            frames = 0;
-            acumDelta -= 1;
-        }
+        setTimeout(run, 50);
         if (scenes.length){
-            scenes[currentScene].act(deltaTime);
+            scenes[currentScene].act();
         } 
     }
 
@@ -282,7 +281,6 @@
         ctx.fillStyle = '#0f0';
         for (i = 0; i <= body.length-1;  i++) {
             body[i].fill(ctx);
-            //ctx.drawImage(iBody, body[i].x, body[i].y);
         }
 
         // Draw walls
@@ -292,17 +290,12 @@
         }
 
         // Draw food
-        //ctx.fillStyle = '#f00';
-        //food.fill(ctx);
         ctx.strokeStyle = '#f00';
         ctx.drawImage(iFood, food.x, food.y);
 
         //Draw special food
         ctx.strokeStyle = '#f00';
         ctx.drawImage(iSpecialFood, specialFood.x, specialFood.y);
-
-        // Debug last key pressed
-        //ctx.fillText('Last Press: '+lastPress,0,20);
         
         // Draw score
         ctx.fillStyle = '#fff';
@@ -323,7 +316,7 @@
         ctx.fillText('FPS: ' + FPS, 50, 10);
     }
 
-    gameScene.act = function(deltaTime) {   
+    gameScene.act = function() {   
         var i =0 ;
 
         if (!pause) {
@@ -348,16 +341,16 @@
 
             // Move Rect
             if (dir === 0) {
-                body[0].y -= 10; //120 * deltaTime;
+                body[0].y -= 10; 
             }
             if (dir === 1) {
-                body[0].x += 10; //120 * deltaTime;
+                body[0].x += 10; 
             }
             if (dir === 2) {
-                body[0].y += 10; //120 * deltaTime;
+                body[0].y += 10; 
             }
             if (dir === 3) {
-                body[0].x -= 10; //120 * deltaTime;
+                body[0].x -= 10; 
             }
 
             // Move Body
@@ -367,10 +360,10 @@
             }
 
             // Out Screen
-            if (body[0].x > buffer.width) {
+            if (body[0].x > buffer.width-1) {
                 body[0].x = 0;
             }
-            if (body[0].y > buffer.height) {
+            if (body[0].y > buffer.height-1) {
                 body[0].y = 0;
             }
             if (body[0].x < 0) {
